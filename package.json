@@ -11,7 +11,7 @@
     "build": "tsc --project ./tsconfig.json",
     "build:module": "tsc --project ./tsconfig.module.json",
     "lint": "tsc --project ./tsconfig.json --noEmit",
-    "prepublishOnly": "nom test && npm run build && npm run build:module"
+    "prepublishOnly": "npm test && npm run build && npm run build:module"
   },
   "keywords": [
     "typescript",
