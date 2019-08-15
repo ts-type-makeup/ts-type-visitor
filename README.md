@@ -1,5 +1,14 @@
 # Typescript type visitor
 
+<p>
+  <a href="https://www.npmjs.com/package/ts-type-visitor">
+    <img alt="Npm" src="https://img.shields.io/npm/v/ts-type-visitor.svg?style=flat-square" />
+  </a>
+  <a href="https://travis-ci.org/ts-type-makeup/ts-type-visitor.svg?branch=master">
+    <img alt="Travis CI build status" src="https://travis-ci.org/ts-type-makeup/ts-type-visitor.svg?branch=master" />
+  </a>
+</p>
+
 It's a function that takes a `ts.TypeChecker` and a `ts.Type` and traverses the type building easy-to-use `TypeModel`
 
 ```ts
