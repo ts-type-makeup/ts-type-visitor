@@ -6,12 +6,12 @@
   "author": "Saito Nakamura <michael.bashurov@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "test": "yarn lint",
+    "test": "npm run lint",
     "watch": "tsc --watch --project ./tsconfig.json",
     "build": "tsc --project ./tsconfig.json",
     "build:module": "tsc --project ./tsconfig.module.json",
     "lint": "tsc --project ./tsconfig.json --noEmit",
-    "prepublishOnly": "yarn test && yarn build && yarn build:module"
+    "prepublishOnly": "nom test && npm run build && npm run build:module"
   },
   "keywords": [
     "typescript",
@@ -20,12 +20,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saitonakamura/ts-type-makeup.git"
+    "url": "git+https://github.com/ts-type-makeup/ts-type-visitor.git"
   },
   "bugs": {
-    "url": "https://github.com/saitonakamura/ts-type-makeup/issues"
+    "url": "https://github.com/ts-type-makeup/ts-type-visitor/issues"
   },
-  "homepage": "https://github.com/saitonakamura/ts-type-makeup/tree/master/ts-type-visitor#readme",
+  "homepage": "https://github.com/ts-type-makeup/ts-type-visitor#readme",
   "peerDependencies": {
     "typescript": "^3.5.2"
   },
