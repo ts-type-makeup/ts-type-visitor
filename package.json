@@ -1,6 +1,6 @@
 {
   "name": "ts-type-visitor",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "main": "dist/index.js",
   "module": "module/index.js",
   "author": "Saito Nakamura <michael.bashurov@gmail.com>",
