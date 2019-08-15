@@ -43,3 +43,11 @@ It's different from Typescript compiler API built-in model by the next propertie
 3. It has a built-in special types, `array` and `tuple` namely, that is kinda tricky to detect using vanilla compiler API
 
 Basically you want to use it along with a compiler API, just using it for the `ts.Type`, and using Typescript compiler API for everything else, e.g. emitting new code, analyzing AST etc.
+
+## Installation
+
+```bash
+npm i -D ts-type-visitor
+# or
+yarn add --dev ts-type-visitor
+```
