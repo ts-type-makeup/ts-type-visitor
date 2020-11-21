@@ -139,7 +139,8 @@ export interface TypeModelTypeParameter extends TypeModelBase {
   readonly kind: "typeParameter";
 }
 
-export interface TypeModelUnion<T = TypeModel> extends TypeModelBase {
+export interface TypeModelUnion<T extends TypeModel = TypeModel>
+  extends TypeModelBase {
   readonly kind: "union";
   readonly types: T[];
 }
@@ -152,15 +153,9 @@ export interface TypeModelIntersection extends TypeModelBase {
 export interface TypeModelIndex {
   readonly kind: "index";
   readonly keyType:
-    | Omit<
-        TypeModelUnion<
-          | Omit<TypeModelString, "originalType" | "toJSON">
-          | Omit<TypeModelNumber, "originalType" | "toJSON">
-        >,
-        "originalType" | "toJSON"
-      >
-    | Omit<TypeModelString, "originalType" | "toJSON">
-    | Omit<TypeModelNumber, "originalType" | "toJSON">;
+    | TypeModelUnion<TypeModelString | TypeModelNumber>
+    | TypeModelString
+    | TypeModelNumber;
   readonly valueType: TypeModel;
 }
 
@@ -450,7 +445,11 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
           kind: "index",
           keyType: {
             kind: "union",
-            types: [{ kind: "string" }, { kind: "number" }],
+            types: [
+              { kind: "string", toJSON },
+              { kind: "number", toJSON },
+            ],
+            toJSON,
           },
           valueType: typeVisitor(checker, stringIndexType),
         },
@@ -465,7 +464,7 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
         props: propsDescriptor,
         index: {
           kind: "index",
-          keyType: { kind: "number" },
+          keyType: { kind: "number", toJSON },
           valueType: typeVisitor(checker, numberIndexType),
         },
         originalType: type,
@@ -479,7 +478,7 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
         props: propsDescriptor,
         index: {
           kind: "index",
-          keyType: { kind: "string" },
+          keyType: { kind: "string", toJSON },
           valueType: typeVisitor(checker, stringIndexType),
         },
         originalType: type,
