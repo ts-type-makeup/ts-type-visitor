@@ -7,7 +7,7 @@ import {
   PseudoBigInt,
   ObjectType,
   ObjectFlags,
-  TypeReference
+  TypeReference,
 } from "typescript";
 
 export type TypeModel =
@@ -52,141 +52,155 @@ export interface PropFields {
   readonly optional: boolean;
 }
 
-export interface TypeModelAny {
+export interface TypeModelBase {
+  readonly originalType?: Type;
+  readonly toJSON: () => any;
+}
+
+export interface TypeModelAny extends TypeModelBase {
   readonly kind: "any";
 }
 
-export interface TypeModelUnknown {
+export interface TypeModelUnknown extends TypeModelBase {
   readonly kind: "unknown";
 }
 
-export interface TypeModelString {
+export interface TypeModelString extends TypeModelBase {
   readonly kind: "string";
 }
 
-export interface TypeModelNumber {
+export interface TypeModelNumber extends TypeModelBase {
   readonly kind: "number";
 }
 
-export interface TypeModelBoolean {
+export interface TypeModelBoolean extends TypeModelBase {
   readonly kind: "boolean";
 }
 
-export interface TypeModelEnum {
+export interface TypeModelEnum extends TypeModelBase {
   readonly kind: "enum";
   readonly values: TypeModel[];
 }
 
-export interface TypeModelBigInt {
+export interface TypeModelBigInt extends TypeModelBase {
   readonly kind: "bigint";
 }
 
-export interface TypeModelStringLiteral {
+export interface TypeModelStringLiteral extends TypeModelBase {
   readonly kind: "stringLiteral";
   readonly value: string;
 }
 
-export interface TypeModelNumberLiteral {
+export interface TypeModelNumberLiteral extends TypeModelBase {
   readonly kind: "numberLiteral";
   readonly value: number;
 }
 
-export interface TypeModelBooleanLiteral {
+export interface TypeModelBooleanLiteral extends TypeModelBase {
   readonly kind: "booleanLiteral";
   readonly value: boolean;
 }
 
-export interface TypeModelEnumLiteral {
+export interface TypeModelEnumLiteral extends TypeModelBase {
   readonly kind: "enumLiteral";
   readonly values: TypeModel[];
 }
 
-export interface TypeModelBigIntLiteral {
+export interface TypeModelBigIntLiteral extends TypeModelBase {
   readonly kind: "bigintLiteral";
   readonly value: PseudoBigInt;
 }
 
-export interface TypeModelESSymbol {
+export interface TypeModelESSymbol extends TypeModelBase {
   readonly kind: "esSymbol";
 }
 
-export interface TypeModelUniqueESSymbol {
+export interface TypeModelUniqueESSymbol extends TypeModelBase {
   readonly kind: "uniqueEsSymbol";
 }
 
-export interface TypeModelVoid {
+export interface TypeModelVoid extends TypeModelBase {
   readonly kind: "void";
 }
 
-export interface TypeModelUndefined {
+export interface TypeModelUndefined extends TypeModelBase {
   readonly kind: "undefined";
 }
 
-export interface TypeModelNull {
+export interface TypeModelNull extends TypeModelBase {
   readonly kind: "null";
 }
 
-export interface TypeModelNever {
+export interface TypeModelNever extends TypeModelBase {
   readonly kind: "never";
 }
 
-export interface TypeModelTypeParameter {
+export interface TypeModelTypeParameter extends TypeModelBase {
   readonly kind: "typeParameter";
 }
 
-export interface TypeModelUnion {
+export interface TypeModelUnion<T = TypeModel> extends TypeModelBase {
   readonly kind: "union";
-  readonly types: TypeModel[];
+  readonly types: T[];
 }
 
-export interface TypeModelIntersection {
+export interface TypeModelIntersection extends TypeModelBase {
   readonly kind: "intersection";
   readonly types: TypeModel[];
 }
 
 export interface TypeModelIndex {
   readonly kind: "index";
-  readonly keyType: TypeModelUnion | TypeModelString | TypeModelNumber;
+  readonly keyType:
+    | Omit<
+        TypeModelUnion<
+          | Omit<TypeModelString, "originalType" | "toJSON">
+          | Omit<TypeModelNumber, "originalType" | "toJSON">
+        >,
+        "originalType" | "toJSON"
+      >
+    | Omit<TypeModelString, "originalType" | "toJSON">
+    | Omit<TypeModelNumber, "originalType" | "toJSON">;
   readonly valueType: TypeModel;
 }
 
-export interface TypeModelIndexedAccess {
+export interface TypeModelIndexedAccess extends TypeModelBase {
   readonly kind: "indexedAccess";
 }
 
-export interface TypeModelConditional {
+export interface TypeModelConditional extends TypeModelBase {
   readonly kind: "conditional";
 }
 
-export interface TypeModelSubstitution {
+export interface TypeModelSubstitution extends TypeModelBase {
   readonly kind: "substitution";
 }
 
-export interface TypeModelNonPrimitive {
+export interface TypeModelNonPrimitive extends TypeModelBase {
   readonly kind: "nonPrimitive";
 }
 
-export interface TypeModelUnidentified {
+export interface TypeModelUnidentified extends TypeModelBase {
   readonly kind: "unidentified";
 }
 
-export interface TypeModelObject {
+export interface TypeModelObject extends TypeModelBase {
   readonly kind: "object";
   readonly props: Array<TypeModelWithPropFields>;
 }
 
-export interface TypeModelObjectWithIndex {
+export interface TypeModelObjectWithIndex extends TypeModelBase {
   readonly kind: "objectWithIndex";
   readonly props: Array<TypeModelWithPropFields>;
   readonly index: TypeModelIndex;
 }
 
-export interface TypeModelArray {
+export interface TypeModelArray extends TypeModelBase {
   readonly kind: "array";
   readonly type: TypeModel;
 }
 
-export interface TypeModelTuple {
+export interface TypeModelTuple extends TypeModelBase {
   readonly kind: "tuple";
   readonly types: TypeModel[];
 }
@@ -205,6 +219,11 @@ function isReferenceType(type: ObjectType): type is TypeReference {
   return !!(type.objectFlags & ObjectFlags.Reference);
 }
 
+function toJSON(this: TypeModelBase) {
+  const { originalType, ...rest } = this;
+  return rest;
+}
+
 export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
   // We're not handling things SomethingLike cause there're unions of flags
   // and would be handled anyway into more specific types
@@ -217,27 +236,35 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
 
   if (type.flags & TypeFlags.Any) {
     return {
-      kind: "any"
+      kind: "any",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Unknown) {
     return {
-      kind: "unknown"
+      kind: "unknown",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.isStringLiteral()) {
     return {
       kind: "stringLiteral",
-      value: type.value
+      value: type.value,
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.isNumberLiteral()) {
     return {
       kind: "numberLiteral",
-      value: type.value
+      value: type.value,
+      originalType: type,
+      toJSON,
     };
   }
 
@@ -245,94 +272,124 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
     return {
       kind: "booleanLiteral",
       // FIXME It's a dirty hack but i can't seem to find any other way to get a value of BooleanLiteral
-      value: (type as any).intrinsicName === "true"
+      value: (type as any).intrinsicName === "true",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.EnumLiteral && type.isUnion()) {
     return {
       kind: "enumLiteral",
-      values: type.types.map(t => typeVisitor(checker, t))
+      values: type.types.map((t) => typeVisitor(checker, t)),
+      originalType: type,
+      toJSON,
     };
   }
 
   if (isBigIntLiteral(type)) {
     return {
       kind: "bigintLiteral",
-      value: type.value
+      value: type.value,
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.String) {
     return {
-      kind: "string"
+      kind: "string",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Boolean) {
     return {
-      kind: "boolean"
+      kind: "boolean",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Number) {
     return {
-      kind: "number"
+      kind: "number",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Enum && type.isUnion()) {
     return {
       kind: "enum",
-      values: type.types.map(t => typeVisitor(checker, t))
+      values: type.types.map((t) => typeVisitor(checker, t)),
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.BigInt) {
     return {
-      kind: "bigint"
+      kind: "bigint",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.ESSymbol) {
     return {
-      kind: "esSymbol"
+      kind: "esSymbol",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.UniqueESSymbol) {
     return {
-      kind: "uniqueEsSymbol"
+      kind: "uniqueEsSymbol",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Void) {
     return {
-      kind: "void"
+      kind: "void",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Undefined) {
     return {
-      kind: "undefined"
+      kind: "undefined",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Null) {
     return {
-      kind: "null"
+      kind: "null",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Never) {
     return {
-      kind: "never"
+      kind: "never",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.TypeParameter) {
     return {
-      kind: "typeParameter"
+      kind: "typeParameter",
+      originalType: type,
+      toJSON,
     };
   }
 
@@ -346,7 +403,9 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
   ) {
     return {
       kind: "tuple",
-      types: type.typeArguments.map(t => typeVisitor(checker, t))
+      types: type.typeArguments.map((t) => typeVisitor(checker, t)),
+      originalType: type,
+      toJSON,
     };
   }
 
@@ -361,20 +420,22 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
     if (!!symbol && symbol.getName() === "Array") {
       return {
         kind: "array",
-        type: typeVisitor(checker, type.typeArguments[0])
+        type: typeVisitor(checker, type.typeArguments[0]),
+        originalType: type,
+        toJSON,
       };
     }
   }
 
   if (type.flags & TypeFlags.Object) {
     const props = type.getProperties();
-    const propsDescriptor = props.map(prop => ({
+    const propsDescriptor = props.map((prop) => ({
       name: prop.name,
       optional: !!(prop.flags & SymbolFlags.Optional),
       ...typeVisitor(
         checker,
-        checker.getTypeOfSymbolAtLocation(prop, prop.valueDeclaration)
-      )
+        checker.getTypeOfSymbolAtLocation(prop, prop.valueDeclaration),
+      ),
     }));
 
     // index types
@@ -389,10 +450,12 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
           kind: "index",
           keyType: {
             kind: "union",
-            types: [{ kind: "string" }, { kind: "number" }]
+            types: [{ kind: "string" }, { kind: "number" }],
           },
-          valueType: typeVisitor(checker, stringIndexType)
-        }
+          valueType: typeVisitor(checker, stringIndexType),
+        },
+        originalType: type,
+        toJSON,
       };
     }
 
@@ -403,8 +466,10 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
         index: {
           kind: "index",
           keyType: { kind: "number" },
-          valueType: typeVisitor(checker, numberIndexType)
-        }
+          valueType: typeVisitor(checker, numberIndexType),
+        },
+        originalType: type,
+        toJSON,
       };
     }
 
@@ -415,28 +480,36 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
         index: {
           kind: "index",
           keyType: { kind: "string" },
-          valueType: typeVisitor(checker, stringIndexType)
-        }
+          valueType: typeVisitor(checker, stringIndexType),
+        },
+        originalType: type,
+        toJSON,
       };
     }
 
     return {
       kind: "object",
-      props: propsDescriptor
+      props: propsDescriptor,
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.isUnion()) {
     return {
       kind: "union",
-      types: type.types.map(t => typeVisitor(checker, t))
+      types: type.types.map((t) => typeVisitor(checker, t)),
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.isIntersection()) {
     return {
       kind: "intersection",
-      types: type.types.map(t => typeVisitor(checker, t))
+      types: type.types.map((t) => typeVisitor(checker, t)),
+      originalType: type,
+      toJSON,
     };
   }
 
@@ -449,29 +522,39 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
 
   if (type.flags & TypeFlags.IndexedAccess) {
     return {
-      kind: "indexedAccess"
+      kind: "indexedAccess",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Conditional) {
     return {
-      kind: "conditional"
+      kind: "conditional",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.Substitution) {
     return {
-      kind: "substitution"
+      kind: "substitution",
+      originalType: type,
+      toJSON,
     };
   }
 
   if (type.flags & TypeFlags.NonPrimitive) {
     return {
-      kind: "nonPrimitive"
+      kind: "nonPrimitive",
+      originalType: type,
+      toJSON,
     };
   }
 
   return {
-    kind: "unidentified"
+    kind: "unidentified",
+    originalType: type,
+    toJSON,
   };
 };
