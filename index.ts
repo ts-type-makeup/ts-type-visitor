@@ -150,7 +150,7 @@ export interface TypeModelIntersection extends TypeModelBase {
   readonly types: TypeModel[];
 }
 
-export interface TypeModelIndex {
+export interface TypeModelIndex extends TypeModelBase {
   readonly kind: "index";
   readonly keyType:
     | TypeModelUnion<TypeModelString | TypeModelNumber>
@@ -452,6 +452,7 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
             toJSON,
           },
           valueType: typeVisitor(checker, stringIndexType),
+          toJSON,
         },
         originalType: type,
         toJSON,
@@ -466,6 +467,7 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
           kind: "index",
           keyType: { kind: "number", toJSON },
           valueType: typeVisitor(checker, numberIndexType),
+          toJSON,
         },
         originalType: type,
         toJSON,
@@ -480,6 +482,7 @@ export const typeVisitor = (checker: TypeChecker, type: Type): TypeModel => {
           kind: "index",
           keyType: { kind: "string", toJSON },
           valueType: typeVisitor(checker, stringIndexType),
+          toJSON,
         },
         originalType: type,
         toJSON,
